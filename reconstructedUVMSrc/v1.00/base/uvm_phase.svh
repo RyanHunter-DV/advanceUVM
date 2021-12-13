@@ -697,18 +697,19 @@ endfunction // }
 // ---
 // TBD error checks if param nodes are actually in this schedule or not
 
-function void uvm_phase::add(uvm_phase phase,
-                             uvm_phase with_phase=null,
-                             uvm_phase after_phase=null,
-                             uvm_phase before_phase=null,
-                             uvm_phase start_with_phase=null,
-                             uvm_phase end_with_phase=null
-                          );
-  uvm_phase new_node, begin_node, end_node, tmp_node;
-  uvm_phase_state_change state_chg;
+function void uvm_phase::add(
+	uvm_phase phase,
+	uvm_phase with_phase=null,
+	uvm_phase after_phase=null,
+	uvm_phase insertBefore=null,
+	uvm_phase start_with_phase=null,
+	uvm_phase end_with_phase=null
+); // {
+	uvm_phase new_node, begin_node, end_node, tmp_node;
+	uvm_phase_state_change state_chg;
 
-  if (phase == null)
-      `uvm_fatal("PH/NULL", "add: phase argument is null")
+	if (phase == null)
+		`uvm_fatal("PH/NULL", "add: phase argument is null")
 
 	// @ryan, if with_phase is an IMP, to find in this class, should be in this
 	// class's find, or else report fatal
@@ -753,7 +754,6 @@ function void uvm_phase::add(uvm_phase phase,
       `uvm_fatal("PH_BAD_ADD",
          {"cannot find end_with_phase '",nm,"' within node '",get_name(),"'"})
   end
-  // }
 
   if (((with_phase != null) + (after_phase != null) + (start_with_phase != null)) > 1)
     `uvm_fatal("PH_BAD_ADD",
@@ -763,13 +763,16 @@ function void uvm_phase::add(uvm_phase phase,
     `uvm_fatal("PH_BAD_ADD",
        "only one of with_phase/before_phase/end_with_phase may be specified as they all specify successor")
 
-  if (before_phase == this || 
-     after_phase == m_end_node || 
-     with_phase == m_end_node ||
-     start_with_phase == m_end_node ||
-     end_with_phase == m_end_node) 
-    `uvm_fatal("PH_BAD_ADD",
-       "cannot add before begin node, after end node, or with end nodes")
+
+
+	if (before_phase == this ||
+		after_phase == m_end_node ||
+		with_phase == m_end_node ||
+		start_with_phase == m_end_node ||
+		end_with_phase == m_end_node
+	)
+		`uvm_fatal("PH_BAD_ADD",
+			"cannot add before begin node, after end node, or with end nodes")
 
   if (before_phase != null && after_phase != null) begin
   	// @ryan, if after_phase isBefore before_phase, then report fatal
@@ -795,24 +798,25 @@ function void uvm_phase::add(uvm_phase phase,
     end
   end
 
-  // If we are inserting a new "leaf node"
-  if (phase.get_phase_type() == UVM_PHASE_IMP) begin
-  	// @ryan, for IMP, need a node, encapsulate the phase into the new_node's
-	// m_imp
-// @ryan,    uvm_task_phase tp;
-    new_node = new(phase.get_name(),UVM_PHASE_NODE,this);
-    new_node.m_imp = phase;
-    begin_node = new_node;
-    end_node = new_node;
+	// }
 
-  end
-  // We are inserting an existing schedule
-  else begin
-  	// @ryan, other phase type,
-    begin_node = phase;
-    end_node   = phase.m_end_node;
-    phase.m_parent = this;
-  end
+	// If we are inserting a new "leaf node"
+	if (phase.get_phase_type() == UVM_PHASE_IMP) begin // {
+		// @ryan, for IMP, need a node, encapsulate the phase into the new_node's
+		// m_imp
+		// @ryan,    uvm_task_phase tp;
+		new_node = new(phase.get_name(),UVM_PHASE_NODE,this);
+		new_node.m_imp = phase;
+		begin_node = new_node;
+		end_node = new_node;
+	// }
+	end else begin // {
+		// We are inserting an existing schedule
+		// @ryan, other phase type, NODE/DOMAIN/SCHEDULE
+		begin_node = phase;
+		end_node   = phase.m_end_node;
+		phase.m_parent = this;
+	end // }
 
   // If 'with_phase' is us, then insert node in parallel
   /*
@@ -896,6 +900,7 @@ function void uvm_phase::add(uvm_phase phase,
 		// unless predecessors to this phase are otherwise specified, 
 		// pre-existing predecessors to before_phase move to be predecessors to the new phase
 		if (after_phase == null && start_with_phase == null) begin // {
+			// @ryan, beforePhase.reattachPredecessorsTo(begin_node) 
 			foreach (before_phase.m_predecessors[pred]) begin
 				// @ryan, delete before_phase from its predecessors and insert
 				// in begin_node
@@ -911,10 +916,11 @@ function void uvm_phase::add(uvm_phase phase,
 			before_phase.m_predecessors.delete(after_phase);
 		end
 
-    // before_phase is now the sole successor of this phase
-    before_phase.m_predecessors[end_node] = 1;
-    end_node.m_successors.delete() ;
-    end_node.m_successors[before_phase] = 1;
+		// @ryan, end_node.resetSuccessors(before_phase)
+		// before_phase is now the sole successor of this phase
+		before_phase.m_predecessors[end_node] = 1;
+		end_node.m_successors.delete() ;
+		end_node.m_successors[before_phase] = 1;
 
 	end // }
 
@@ -1240,7 +1246,6 @@ endfunction
 
 function uvm_phase uvm_phase::find(uvm_phase phase, bit stay_in_scope=1);
   // TBD full search
-  //$display({"\nFIND node '",phase.get_name(),"' within ",get_name()," (scope ",m_phase_type.name(),")", (stay_in_scope) ? " staying within scope" : ""});
   if (phase == m_imp || phase == this)
     return phase;
   find = m_find_predecessor(phase,stay_in_scope,this);

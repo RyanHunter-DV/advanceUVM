@@ -97,7 +97,7 @@ class uvm_domain extends uvm_phase;
   // domain are build, connect, end_of_elaboration, start_of_simulation, run,
   // extract, check, report, and final.
   //
-	static function uvm_domain get_common_domain();
+	static function uvm_domain get_common_domain(); // {
 		uvm_domain domain;
 
 		// @ryan, get from static if common domain is aready exists
@@ -117,25 +117,29 @@ class uvm_domain extends uvm_phase;
 		domain.add(uvm_report_phase::get());
 		domain.add(uvm_final_phase::get());
 
-    // for backward compatibility, make common phases visible;
-    // same as uvm_<name>_phase::get().
-    build_ph               = domain.find(uvm_build_phase::get());
-    connect_ph             = domain.find(uvm_connect_phase::get());
-    end_of_elaboration_ph  = domain.find(uvm_end_of_elaboration_phase::get());
-    start_of_simulation_ph = domain.find(uvm_start_of_simulation_phase::get());
-    run_ph                 = domain.find(uvm_run_phase::get());   
-    extract_ph             = domain.find(uvm_extract_phase::get());
-    check_ph               = domain.find(uvm_check_phase::get());
-    report_ph              = domain.find(uvm_report_phase::get());
+		// for backward compatibility, make common phases visible;
+		// same as uvm_<name>_phase::get().
+		// @ryan, global variable for the common phase handlers.
+		build_ph               = domain.find(uvm_build_phase::get());
+		connect_ph             = domain.find(uvm_connect_phase::get());
+		end_of_elaboration_ph  = domain.find(uvm_end_of_elaboration_phase::get());
+		start_of_simulation_ph = domain.find(uvm_start_of_simulation_phase::get());
+		run_ph                 = domain.find(uvm_run_phase::get());   
+		extract_ph             = domain.find(uvm_extract_phase::get());
+		check_ph               = domain.find(uvm_check_phase::get());
+		report_ph              = domain.find(uvm_report_phase::get());
 
-    domain = get_uvm_domain();
-    m_domains["common"].add(domain,
-                     .with_phase(m_domains["common"].find(uvm_run_phase::get())));
+		domain = get_uvm_domain();
+		
+		// @ryan, the m_domains["common"] is automatically added when calling
+		// new() in this domain class
+		m_domains["common"].add(domain,
+			.with_phase(m_domains["common"].find(uvm_run_phase::get())));
 
 
     return m_domains["common"];
 
-  endfunction
+  endfunction // }
 
 
 
@@ -162,16 +166,19 @@ class uvm_domain extends uvm_phase;
   //
   // Get a handle to the singleton ~uvm~ domain
   //
-  static function uvm_domain get_uvm_domain();
+	static function uvm_domain get_uvm_domain();
   
-    if (m_uvm_domain == null) begin
-      m_uvm_domain = new("uvm");
-      m_uvm_schedule = new("uvm_sched", UVM_PHASE_SCHEDULE);
-      add_uvm_phases(m_uvm_schedule);
-      m_uvm_domain.add(m_uvm_schedule);
-    end
-    return m_uvm_domain;
-  endfunction
+		if (m_uvm_domain == null) begin
+			m_uvm_domain = new("uvm");
+			m_uvm_schedule = new("uvm_sched", UVM_PHASE_SCHEDULE);
+
+			// @ryan, add task phases into this schedule, then add schedule into
+			// uvm_domain
+			add_uvm_phases(m_uvm_schedule);
+			m_uvm_domain.add(m_uvm_schedule);
+		end
+		return m_uvm_domain;
+	endfunction
 
 
 

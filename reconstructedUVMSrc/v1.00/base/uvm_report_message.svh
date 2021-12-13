@@ -475,7 +475,7 @@ endclass
 //------------------------------------------------------------------------------
 
 // @uvm-ieee 1800.2-2017 auto 6.2.1
-class uvm_report_message extends uvm_object;
+class uvm_report_message extends uvm_object; // {
 
   protected uvm_report_object _report_object;
   protected uvm_report_handler _report_handler;
@@ -969,7 +969,7 @@ class uvm_report_message extends uvm_object;
     _report_message_element_container.add_object(name, obj, action);
   endfunction
 
-endclass
+endclass // }
 
 
 `endif

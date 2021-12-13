@@ -316,32 +316,40 @@ class uvm_report_handler extends uvm_object;
   // (e.g. <uvm_report_error>) in <uvm_report_object>.
 
   // @uvm-ieee 1800.2-2017 auto 6.4.7
-  virtual function void process_report_message(uvm_report_message report_message);
-    process p = process::self();
-    uvm_report_server srvr = uvm_report_server::get_server();
-    string id = report_message.get_id();
-    uvm_severity severity = report_message.get_severity();
+	virtual function void process_report_message(uvm_report_message report_message); // {
+		// @ryan, not used, process p = process::self();
+		// @ryan, get static report server
+		uvm_report_server srvr = uvm_report_server::get_server();
+		// @ryan, get message id
+		string id = report_message.get_id();
+		uvm_severity severity = report_message.get_severity();
 
-    // Check for severity overrides and apply them before calling the server.
-    // An id specific override has precedence over a generic severity override.
-    if(sev_id_overrides.exists(id)) begin
-      if(sev_id_overrides[id].exists(uvm_severity'(severity))) begin
-        severity = sev_id_overrides[id].get(severity);
-        report_message.set_severity(severity);
-      end
-    end
-    else begin
-      if(sev_overrides.exists(severity)) begin
-        severity = sev_overrides.get(severity);
-        report_message.set_severity(severity);
-      end
-    end
-    report_message.set_file(get_file_handle(severity, id));
-    report_message.set_report_handler(this);
-    report_message.set_action(get_action(severity, id));
-    srvr.process_report_message(report_message);
+		// Check for severity overrides and apply them before calling the server.
+		// An id specific override has precedence over a generic severity override.
+		// @ryan, replace the severity if has override
+		if(sev_id_overrides.exists(id)) begin // {
+			// @ryan, id specific
+			if(sev_id_overrides[id].exists(uvm_severity'(severity))) begin
+				severity = sev_id_overrides[id].get(severity);
+				report_message.set_severity(severity);
+			end
+		// }
+		end else begin // {
+			// @ryan, check in generic overrides
+			if(sev_overrides.exists(severity)) begin // {
+				severity = sev_overrides.get(severity);
+				report_message.set_severity(severity);
+			end // }
+		end // }
+
+		report_message.set_file(get_file_handle(severity, id));
+		report_message.set_report_handler(this);
+		report_message.set_action(get_action(severity, id));
+
+		// @ryan, send server to process the message
+		srvr.process_report_message(report_message);
     
-  endfunction
+	endfunction // }
 
 
   //----------------------------------------------------------------------------
@@ -353,6 +361,7 @@ class uvm_report_handler extends uvm_object;
   //
   // Returns a string representation of the ~action~, e.g., "DISPLAY".
 
+	// @ryan, change from int type into string
   static function string format_action(uvm_action action);
     string s;
 
@@ -409,6 +418,7 @@ class uvm_report_handler extends uvm_object;
 
     uvm_id_file_array array;
 
+	// @ryan, get file of severity&id
     if(severity_id_file_handles.exists(severity)) begin
       array = severity_id_file_handles[severity];      
       if(array.exists(id))
@@ -416,12 +426,15 @@ class uvm_report_handler extends uvm_object;
     end
 
 
+	// @ryan, generic file_handles for all severities of this id
     if(id_file_handles.exists(id))
       return id_file_handles.get(id);
 
+	// @ryan, generic file handles for all ids of this severity
     if(severity_file_handles.exists(severity))
       return severity_file_handles[severity];
 
+	// @ryan, return the default one
     return default_file_handle;
 
   endfunction
@@ -509,6 +522,7 @@ class uvm_report_handler extends uvm_object;
     if (file != 0)
       return file;
   
+	// @ryan, already searched in get_severity_id_file, not need {{{
     if (id_file_handles.exists(id)) begin
       file = id_file_handles.get(id);
       if (file != 0)
@@ -522,6 +536,7 @@ class uvm_report_handler extends uvm_object;
     end
 
     return default_file_handle;
+	// }}}
   endfunction
 
 
