@@ -158,9 +158,9 @@ virtual class uvm_coreservice_t;
 
 	// @uvm-ieee 1800.2-2017 auto F.4.1.3
 	static function uvm_coreservice_t get();
+		// @RyanH, use uvm_init to create a default coreservice
 		if(inst==null)
 			uvm_init(null);
-		
 		return inst;
 	endfunction // get
 

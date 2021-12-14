@@ -592,92 +592,105 @@ virtual class uvm_report_catcher extends uvm_callback;
   endfunction
 
 
-  //process_all_report_catchers
-  //method called by report_server.report to process catchers
-  //
+	//process_all_report_catchers
+	//method called by report_server.report to process catchers
+	//
+	static function int process_all_report_catchers(uvm_report_message rm); // {
+		int iter;
+		uvm_report_catcher catcher;
+		int thrown = 1;
+		uvm_severity orig_severity;
+		static bit in_catcher;
+		uvm_report_object l_report_object = rm.get_report_object();
+		
+		// @RyanH, in case multiple threads calling this static function
+		// simultaneously.
+		// @RyanH, TODO, why not use semaphore to wait until available?
+		if(in_catcher == 1) return 1;in_catcher = 1;    
 
-  static function int process_all_report_catchers(uvm_report_message rm);
-    int iter;
-    uvm_report_catcher catcher;
-    int thrown = 1;
-    uvm_severity orig_severity;
-    static bit in_catcher;
-    uvm_report_object l_report_object = rm.get_report_object();
+		uvm_callbacks_base::m_tracing = 0;  //turn off cb tracing so catcher stuff doesn't print
 
-    if(in_catcher == 1) begin
-        return 1;
-    end
-    in_catcher = 1;    
-    uvm_callbacks_base::m_tracing = 0;  //turn off cb tracing so catcher stuff doesn't print
+		// @RyanH, get original severity from rm
+		orig_severity = uvm_severity'(rm.get_severity());
+		m_modified_report_message = rm;
 
-    orig_severity = uvm_severity'(rm.get_severity());
-    m_modified_report_message = rm;
+		catcher = uvm_report_cb::get_first(iter,l_report_object);
 
-    catcher = uvm_report_cb::get_first(iter,l_report_object);
-    if (catcher != null) begin
-      if(m_debug_flags & DO_NOT_MODIFY) begin
-        process p = process::self(); // Keep random stability
-        string randstate;
-        if (p != null)
-          randstate = p.get_randstate();
-        $cast(m_orig_report_message, rm.clone()); //have to clone, rm can be extended type
-        if (p != null)
-          p.set_randstate(randstate);
-      end
-    end
-    while(catcher != null) begin
-      uvm_severity prev_sev;
+		if (catcher != null) begin
+			if(m_debug_flags & DO_NOT_MODIFY) begin
+				process p = process::self(); // Keep random stability
+				string randstate;
+				// @RyanH, recordCurrentRandstate
+				if (p != null) randstate = p.get_randstate();
+				$cast(m_orig_report_message, rm.clone()); //have to clone, rm can be extended type
+				// @RyanH, revertRandstate
+				if (p != null) p.set_randstate(randstate);
+			end
+		end
 
-      if (!catcher.callback_mode()) begin
-        catcher = uvm_report_cb::get_next(iter,l_report_object);
-        continue;
-      end
+		while(catcher != null) begin // {
+			uvm_severity prev_sev;
 
-      prev_sev = m_modified_report_message.get_severity();
-      m_set_action_called = 0;
-      thrown = catcher.process_report_catcher();
+			// @RyanH, current callback not enabled, then get_next
+			if (!catcher.callback_mode()) begin
+				catcher = uvm_report_cb::get_next(iter,l_report_object);
+				continue;
+			end
+			
+			prev_sev = m_modified_report_message.get_severity();
+			m_set_action_called = 0;
+			// @RyanH, callback process_report_catcher can change the static
+			// m_modified_report_message and m-set_action_called
+			thrown = catcher.process_report_catcher();
 
-      // Set the action to the default action for the new severity
-      // if it is still at the default for the previous severity,
-      // unless it was explicitly set.
-      if (!m_set_action_called && 
-          m_modified_report_message.get_severity() != prev_sev && 
-          m_modified_report_message.get_action() == 
-            l_report_object.get_report_action(prev_sev, "*@&*^*^*#")) begin
+			// Set the action to the default action for the new severity
+			// if it is still at the default for the previous severity,
+			// unless it was explicitly set.
+			if (!m_set_action_called && 
+				m_modified_report_message.get_severity() != prev_sev && 
+				m_modified_report_message.get_action() == l_report_object.get_report_action(prev_sev, "*@&*^*^*#")
+			) begin // {
+				// @RyanH, if severity changed and action not changed, then
+				// set message action fo the new severity
+				m_modified_report_message.set_action(
+					l_report_object.get_report_action(m_modified_report_message.get_severity(), "*@&*^*^*#"));
+			end // }
 
-         m_modified_report_message.set_action(
-           l_report_object.get_report_action(m_modified_report_message.get_severity(), "*@&*^*^*#"));
-      end
+			// @RyanH, if caught, then break this and do not report out
+			// anymore.
+			if(thrown == 0) begin 
+				case(orig_severity)
+					UVM_FATAL:   m_caught_fatal++;
+					UVM_ERROR:   m_caught_error++;
+					UVM_WARNING: m_caught_warning++;
+				endcase   
+				break;
+			end 
+			catcher = uvm_report_cb::get_next(iter,l_report_object);
+		end //while // }
 
-      if(thrown == 0) begin 
-        case(orig_severity)
-          UVM_FATAL:   m_caught_fatal++;
-          UVM_ERROR:   m_caught_error++;
-          UVM_WARNING: m_caught_warning++;
-         endcase   
-         break;
-      end 
-      catcher = uvm_report_cb::get_next(iter,l_report_object);
-    end //while
+		//update counters if message was returned with demoted severity
+		// @RyanH, count demoted if severity is overwritten by a light one.
+		case(orig_severity)
+			UVM_FATAL:    
+				if(m_modified_report_message.get_severity() < orig_severity)
+					m_demoted_fatal++;
+			UVM_ERROR:
+				if(m_modified_report_message.get_severity() < orig_severity)
+					m_demoted_error++;
+			UVM_WARNING:
+				if(m_modified_report_message.get_severity() < orig_severity)
+					m_demoted_warning++;
+		endcase
+		
+		// @RyanH, release flags
+		in_catcher = 0;
+		uvm_callbacks_base::m_tracing = 1;  //turn tracing stuff back on
 
-    //update counters if message was returned with demoted severity
-    case(orig_severity)
-      UVM_FATAL:    
-        if(m_modified_report_message.get_severity() < orig_severity)
-          m_demoted_fatal++;
-      UVM_ERROR:
-        if(m_modified_report_message.get_severity() < orig_severity)
-          m_demoted_error++;
-      UVM_WARNING:
-        if(m_modified_report_message.get_severity() < orig_severity)
-          m_demoted_warning++;
-    endcase
-
-    in_catcher = 0;
-    uvm_callbacks_base::m_tracing = 1;  //turn tracing stuff back on
-
-    return thrown; 
-  endfunction
+		// @RyanH, only when this rm is thrown, then can it be reported out by
+		// report server
+		return thrown; 
+	endfunction // }
 
 
   //process_report_catcher
