@@ -1,0 +1,46 @@
+# virtual class uvm_factory
+	This is the basic virtual factory class, provides 2 static APIs for getting/setting factory
+	object from/to coreservice. And many pure virtual APIs declared within this class, which is just
+	a declaration and will be defined in the derived uvm_default_factory.
+#
+
+# class uvm_default_factory
+	Extends from uvm_factory, and this is the actual class that created by coreservice. Although UVM
+	provides a way to override this default factory, we now assume the default_factory as the
+	standard part of UVM factory mechanism.
+
+# API::register, non-static
+	To record input obj into m_type_names[obj.get_type_name] and m_type[obj] if obj's typename exists,
+	or else only add it to m_types[obj]. And then get all instOverrideByTypename/instOverrideByWildcard
+	into instOverride[obj]
+
+# API::set_type_override_by_type, non-static
+	Record a new override information to m_type_overrides[$] if the originalObj not previously
+	overridden, else if replace is enabled, then replace the old by the new one.
+
+# API::find_type_override_by_type, non-static
+	Will find the deepest overrideObj of the originalObj, for example, if override AObj by BObj, and
+	override BObj by CObj, then when we call find override of AObj, we'll finally get the CObj.
+
+
+# API::set_type_override_by_name, non-static
+
+
+
+
+#
+
+# virtual class uvm_object_wrapper
+	The object wrapper is kind of a base wrapper that used as the argument in factory, the real
+	object/component to be created is stored within the registry class (which is the derivative of
+	uvm_object_wrapper). So by using this wrapper in factory, UVM kind like can also use the
+	registry as the target object container.
+#
+
+
+
+##################################################################
+# features of factory, might be utilized
+##################################################################
+# typename alias
+#
