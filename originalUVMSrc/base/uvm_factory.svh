@@ -1369,25 +1369,26 @@ endfunction // }
 // set_inst_alias
 // ---------------------
 
-function void uvm_default_factory::set_inst_alias(string alias_type_name,
-                          uvm_object_wrapper original_type, string full_inst_path);
+function void uvm_default_factory::set_inst_alias(
+	string alias_type_name,
+	uvm_object_wrapper original_type,
+	string full_inst_path
+); // {
     
-    string original_type_name; 
-    m_inst_typename_alias_t  orig_type_alias_per_inst;
+	string original_type_name = original_type.get_type_name();
+	m_inst_typename_alias_t  orig_type_alias_per_inst;
     
-    original_type_name = original_type.get_type_name();
-    
-    if (!is_type_registered(original_type))
-       uvm_report_warning("BDTYP",{"Cannot define alias of type '",
-       original_type_name,"' because it is not registered with the factory."}, UVM_NONE);      
-    else begin
-        orig_type_alias_per_inst.alias_type_name = alias_type_name;
-        orig_type_alias_per_inst.full_inst_path = full_inst_path;
-        orig_type_alias_per_inst.orig_type_name = original_type_name;
-        m_type_name_inst_alias.push_back(orig_type_alias_per_inst);
-    end
+	if (!is_type_registered(original_type))
+		uvm_report_warning("BDTYP",{"Cannot define alias of type '",
+			original_type_name,"' because it is not registered with the factory."}, UVM_NONE);      
+	else begin // {
+		orig_type_alias_per_inst.alias_type_name = alias_type_name;
+		orig_type_alias_per_inst.full_inst_path = full_inst_path;
+		orig_type_alias_per_inst.orig_type_name = original_type_name;
+		m_type_name_inst_alias.push_back(orig_type_alias_per_inst);
+	end // }
 
-endfunction
+endfunction // }
 
 function bit uvm_default_factory::m_has_wildcard(string nm);
   foreach (nm[i]) 
@@ -1552,64 +1553,62 @@ endfunction
 
 // find_override_by_name
 // ---------------------
-// MARKER
-function uvm_object_wrapper uvm_default_factory::find_override_by_name (string requested_type_name,
-                                                                string full_inst_path);
-  uvm_object_wrapper rtype;
-  uvm_factory_queue_class qc;
-  uvm_factory_override lindex;
+// @RyanH, findOverrideByTypename()
+function uvm_object_wrapper uvm_default_factory::find_override_by_name (
+	string requested_type_name,
+	string full_inst_path
+); // {
 
-  uvm_object_wrapper override;
-  string req_type_name;
-  m_inst_typename_alias_t  type_alias_inst[$];  
+	uvm_object_wrapper rtype;
+	uvm_factory_queue_class qc;
+	uvm_factory_override lindex;
+
+	uvm_object_wrapper override;
+	string req_type_name;
+	m_inst_typename_alias_t  type_alias_inst[$];  
       
-  //Search first typename aliases against requested_type_name using pattern match on full_inst_path
-  type_alias_inst = m_type_name_inst_alias.find(i) with ((i.alias_type_name == requested_type_name) && uvm_is_match(full_inst_path, i.full_inst_path));
-  if (type_alias_inst.size() > 0) begin
-      req_type_name = type_alias_inst[0].orig_type_name;
-  end
-  else if (m_type_name_alias.exists(requested_type_name))
-      req_type_name = m_type_name_alias[requested_type_name];
-  else
-      req_type_name = requested_type_name;
+	//Search first typename aliases against requested_type_name using pattern match on full_inst_path
+	// @RyanH, find out the alias matched the alias_type_name is the requested_type_name, and the
+	// full inst path
+	type_alias_inst = m_type_name_inst_alias.find(i) with ((i.alias_type_name == requested_type_name) && uvm_is_match(full_inst_path, i.full_inst_path));
 
-  if (m_type_names.exists(req_type_name))
-    rtype = m_type_names[req_type_name];
+	if (type_alias_inst.size() > 0)
+		// @RyanH, if has the alias, get the first matched queue's original type name
+		req_type_name = type_alias_inst[0].orig_type_name;
+	else if (m_type_name_alias.exists(requested_type_name))
+		// @RyanH, if alias by type name only.
+		req_type_name = m_type_name_alias[requested_type_name];
+	else
+		req_type_name = requested_type_name;
 
-/***
-  if(rtype == null) begin
-    if(requested_type_name != "") begin
-      uvm_report_warning("TYPNTF", {"Requested type name ",
-         requested_type_name, " is not registered with the factory. The instance override to ",
-         full_inst_path, " is ignored"}, UVM_NONE);
-    end
-    m_lookup_strs[requested_type_name] = 1;
-    return null;
-  end
-***/
+	// @RyanH, get originalObj of that type name
+	if (m_type_names.exists(req_type_name)) rtype = m_type_names[req_type_name];
 
-  if (full_inst_path != "") begin
-    if(rtype == null) begin
-      if(m_inst_override_name_queues.exists(req_type_name))
-        qc = m_inst_override_name_queues[req_type_name];
-    end
-    else begin
-      if(m_inst_override_queues.exists(rtype))
-        qc = m_inst_override_queues[rtype];
-    end
-    if(qc != null)
-      for(int index = 0; index<qc.queue.size(); ++index) begin
-        if (uvm_is_match(qc.queue[index].orig_type_name, req_type_name) &&
-            uvm_is_match(qc.queue[index].full_inst_path, full_inst_path)) begin
-          m_override_info.push_back(qc.queue[index]);
-          if (m_debug_pass) begin
-            if (override == null) begin
-              override = qc.queue[index].ovrd_type;
-              qc.queue[index].selected = 1;
-              lindex=qc.queue[index];
-            end
-          end
-          else begin
+
+	if (full_inst_path != "") begin // {
+		// @RyanH, if inst path is not empty
+		if(rtype == null) begin
+			// @RyanH, if originalObj not registered by that req_type_name, then searching in the
+			// instOverrideNameQueue
+			if(m_inst_override_name_queues.exists(req_type_name))
+				qc = m_inst_override_name_queues[req_type_name];
+		end else begin
+			if(m_inst_override_queues.exists(rtype))
+				qc = m_inst_override_queues[rtype];
+		end
+		if(qc != null)
+			for(int index = 0; index<qc.queue.size(); ++index) begin
+				if (uvm_is_match(qc.queue[index].orig_type_name, req_type_name) &&
+					uvm_is_match(qc.queue[index].full_inst_path, full_inst_path)
+				) begin
+					m_override_info.push_back(qc.queue[index]);
+					if (m_debug_pass) begin
+						if (override == null) begin
+							override = qc.queue[index].ovrd_type;
+							qc.queue[index].selected = 1;
+							lindex=qc.queue[index];
+						end
+					end else begin
 	        qc.queue[index].used++;
             if (qc.queue[index].ovrd_type.get_type_name() == req_type_name)
               return qc.queue[index].ovrd_type;
