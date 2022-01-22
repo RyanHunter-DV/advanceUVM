@@ -734,10 +734,10 @@ endclass
 
 `ifdef UVM_USE_PROCESS_CONTAINER
 class process_container_c;
-   process p;
-   function new(process p_);
-     p=p_;
-   endfunction
+	process p;
+	function new(process p_);
+		p=p_;
+	endfunction
 endclass
 `endif
 
