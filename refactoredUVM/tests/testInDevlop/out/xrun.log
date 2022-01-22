@@ -1,0 +1,54 @@
+xrun(64): 18.03-s001: (c) Copyright 1995-2018 Cadence Design Systems, Inc.
+TOOL:	xrun(64)	18.03-s001: Started on Jan 22, 2022 at 19:30:48 CST
+xrun
+	-uvmnoautocompile
+	-access rwc
+	-timescale 1ns/1ps
+	-sv
+	-64bit
+	-f ../filelist
+		-incdir /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/tests/testInDevlop
+		-incdir /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/src
+		/home/ryan/prj/GitHub/advanceUVM/refactoredUVM/src/uvm.sv
+		/home/ryan/prj/GitHub/advanceUVM/refactoredUVM/tests/testInDevlop/test.sv
+file: /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/src/uvm.sv
+	package worklib.uvm_pkg:sv
+		errors: 0, warnings: 0
+file: /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/tests/testInDevlop/test.sv
+	module worklib.tb:sv
+		errors: 0, warnings: 0
+xmvlog: *W,SPDUSD: Include directory /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/tests/testInDevlop given but not used.
+	Total errors/warnings found outside modules and primitives:
+		errors: 0, warnings: 1
+		Caching library 'worklib' ....... Done
+	Elaborating the design hierarchy:
+	Top level design units:
+		tb
+xmelab: *W,DSEMEL: This SystemVerilog design will be simulated as per IEEE 1800-2009 SystemVerilog simulation semantics. Use -disable_sem2009 option for turning off SV 2009 simulation semantics.
+	Building instance overlay tables: .................... Done
+	Generating native compiled code:
+		worklib.tb:sv <0x252bcc4a>
+			streams:   1, words:   871
+	Building instance specific data structures.
+	Loading native compiled code:     .................... Done
+	Design hierarchy summary:
+		                  Instances  Unique
+		Modules:                  1       1
+		Verilog packages:         0       1
+		Registers:                0   11005
+		Named events:             0      10
+		Initial blocks:           1     144
+		Parallel blocks:          0      26
+		Assertions:               0       3
+		SV Class declarations:    0     327
+		Simulation timescale:   1ps
+	Writing initial simulation snapshot: worklib.tb:sv
+Loading snapshot worklib.tb:sv .................... Done
+xmsim: *W,DSEM2009: This SystemVerilog design is simulated as per IEEE 1800-2009 SystemVerilog simulation semantics. Use -disable_sem2009 option for turning off SV 2009 simulation semantics.
+xcelium> source /home/tools/cdns/XLM/1803/tools/xcelium/files/xmsimrc
+xcelium> run
+hello started
+Simulation complete via $finish(1) at time 200 NS + 0
+../test.sv:5 		$finish;
+xcelium> exit
+TOOL:	xrun(64)	18.03-s001: Exiting on Jan 22, 2022 at 19:30:49 CST  (total: 00:00:01)
