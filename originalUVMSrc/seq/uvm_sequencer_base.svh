@@ -50,7 +50,7 @@ virtual
 class uvm_sequencer_base extends uvm_component;
 
   typedef enum {SEQ_TYPE_REQ,
-                SEQ_TYPE_LOCK} seq_req_t; 
+                SEQ_TYPE_LOCK} seq_req_t;
 
 // queue of sequences waiting for arbitration
   protected uvm_sequence_request arb_sequence_q[$];
@@ -222,8 +222,8 @@ class uvm_sequencer_base extends uvm_component;
   // Function: unlock
   //
   // Implementation of unlock, as defined in P1800.2-2017 section 15.3.2.12.
-  // 
-  // NOTE: unlock is documented in error as a virtual task, whereas it is 
+  //
+  // NOTE: unlock is documented in error as a virtual task, whereas it is
   // implemented as a virtual function.
   //
   //| extern virtual function void unlock(uvm_sequence_base sequence_ptr);
@@ -235,8 +235,8 @@ class uvm_sequencer_base extends uvm_component;
   // Function: ungrab
   //
   // Implementation of ungrab, as defined in P1800.2-2017 section 15.3.2.13.
-  // 
-  // NOTE: ungrab is documented in error as a virtual task, whereas it is 
+  //
+  // NOTE: ungrab is documented in error as a virtual task, whereas it is
   // implemented as a virtual function.
   //
   //| extern virtual function void ungrab(uvm_sequence_base sequence_ptr);
@@ -264,7 +264,7 @@ class uvm_sequencer_base extends uvm_component;
   // @uvm-ieee 1800.2-2017 auto 15.3.2.17
   extern virtual function bit has_do_available();
 
- 
+
 
   // @uvm-ieee 1800.2-2017 auto 15.3.2.19
   extern function void set_arbitration(UVM_SEQ_ARB_TYPE val);
@@ -368,11 +368,11 @@ class uvm_sequencer_base extends uvm_component;
   // Function: disable_auto_item_recording
   //
   // Disables auto_item_recording
-  // 
-  // This function is the actual implementation of the 
+  //
+  // This function is the actual implementation of the
   // uvm_sqr_if_base::disable_auto_item_recording() method detailed in
   // IEEE1800.2 section 15.2.1.2.10
-  // 
+  //
   // This function is implemented here to allow <uvm_push_sequencer#(REQ,RSP)>
   // and <uvm_push_driver#(REQ,RSP)> access to the call.
   //
@@ -384,11 +384,11 @@ class uvm_sequencer_base extends uvm_component;
   //
   // Returns 1 is auto_item_recording is enabled,
   // otherwise 0
-  // 
-  // This function is the actual implementation of the 
+  //
+  // This function is the actual implementation of the
   // uvm_sqr_if_base::is_auto_item_recording_enabled() method detailed in
   // IEEE1800.2 section 15.2.1.2.11
-  // 
+  //
   // This function is implemented here to allow <uvm_push_sequencer#(REQ,RSP)>
   // and <uvm_push_driver#(REQ,RSP)> access to the call.
   //
@@ -542,14 +542,16 @@ function void uvm_sequencer_base::grant_queued_locks();
           remove_sequence_from_queues(zombies[idx].sequence_ptr);
        end
     end
- 
+
     // grant the first lock request that is not blocked, if any
     begin
        int lock_req_indices[$];
        lock_req_indices = arb_sequence_q.find_first_index(item) with (item.request==SEQ_TYPE_LOCK && is_blocked(item.sequence_ptr) == 0);
        if(lock_req_indices.size()) begin
           uvm_sequence_request lock_req = arb_sequence_q[lock_req_indices[0]];
+		  // push to lock_list if not previously blocked
           lock_list.push_back(lock_req.sequence_ptr);
+		  // locked req is completed, and remove it
           m_set_arbitration_completed(lock_req.request_id);
           arb_sequence_q.delete(lock_req_indices[0]);
           m_update_lists();
@@ -604,6 +606,7 @@ function int uvm_sequencer_base::m_choose_next_request();
 
   i = 0;
   while (i < arb_sequence_q.size()) begin
+	  // check killed or finished sequences in arb_sequence_q
      if ((arb_sequence_q[i].process_id.status == process::KILLED) ||
          (arb_sequence_q[i].process_id.status == process::FINISHED)) begin
         `uvm_error("SEQREQZMB", $sformatf("The task responsible for requesting a wait_for_grant on sequencer '%s' for sequence '%s' has been killed, to avoid a deadlock the sequence will be removed from the arbitration queues", this.get_full_name(), arb_sequence_q[i].sequence_ptr.get_full_name()))
@@ -892,7 +895,7 @@ class m_uvm_sqr_seq_base extends uvm_sequence_base;
       super.new(name);
    endfunction : new
 endclass : m_uvm_sqr_seq_base
-   
+
 task uvm_sequencer_base::execute_item(uvm_sequence_item item);
   m_uvm_sqr_seq_base seq;
 
@@ -986,8 +989,7 @@ function bit uvm_sequencer_base::is_blocked(uvm_sequence_base sequence_ptr);
                      "is_blocked passed null sequence_ptr", UVM_NONE);
 
     foreach (lock_list[i]) begin
-      if ((lock_list[i].get_inst_id() !=
-           sequence_ptr.get_inst_id()) &&
+      if ((lock_list[i].get_inst_id()!=sequence_ptr.get_inst_id()) &&
           (is_child(lock_list[i], sequence_ptr) == 0)) begin
         return 1;
       end

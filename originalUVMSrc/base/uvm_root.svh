@@ -177,7 +177,7 @@ class uvm_root extends uvm_component;
 `endif
 
   // Function -- NODOCS -- get_finish_on_completion
-  
+
   virtual  function bit get_finish_on_completion();
      return finish_on_completion;
   endfunction : get_finish_on_completion
@@ -187,7 +187,7 @@ class uvm_root extends uvm_component;
   virtual  function void set_finish_on_completion(bit f);
      finish_on_completion = f;
   endfunction : set_finish_on_completion
-   
+
 //----------------------------------------------------------------------------
 // Group -- NODOCS -- Topology
 //----------------------------------------------------------------------------
@@ -358,7 +358,7 @@ function uvm_root::new();
 	m_check_verbosity();
 
 `ifdef UVM_ENABLE_DEPRECATED_API
-   uvm_top = this; 
+   uvm_top = this;
 `endif
 
 endfunction
@@ -383,7 +383,7 @@ function void uvm_root::report_header(UVM_FILE file = 0);
 	q.push_back("\n  You are using a version of the UVM library that has been compiled\n");
 	q.push_back("  with `UVM_ENABLE_DEPRECATED_API defined.\n");
 	q.push_back("  See https://accellera.mantishub.io/view.php?id=5072 for more details.\n");
-   
+
 `endif
 
 
@@ -419,6 +419,7 @@ task uvm_root::run_test(string test_name="");
 
   	uvm_run_test_callback::m_do_pre_run_test();
 
+	// get static factory handle
 	factory=uvm_factory::get();
 	m_uvm_core_state=UVM_CORE_PRE_RUN;
 
