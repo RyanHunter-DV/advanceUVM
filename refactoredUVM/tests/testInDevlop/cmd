@@ -1,0 +1,4 @@
+if [ ! -e out ]; then
+	mkdir out
+fi
+cd out;xrun -uvmnoautocompile -access rwc -timescale 1ns/1ps -sv -64bit -f ../filelist

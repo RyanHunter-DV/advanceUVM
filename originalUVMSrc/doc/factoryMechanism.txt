@@ -18,14 +18,19 @@
 	Record a new override information to m_type_overrides[$] if the originalObj not previously
 	overridden, else if replace is enabled, then replace the old by the new one.
 
-# API::find_type_override_by_type, non-static
+# API::find_override_by_type, non-static
 	Will find the deepest overrideObj of the originalObj, for example, if override AObj by BObj, and
 	override BObj by CObj, then when we call find override of AObj, we'll finally get the CObj.
+
+# API::find_override_by_name, non-static
 
 
 # API::set_type_override_by_name, non-static
 
 
+# API::set_inst_alias, non-static
+	Set original type name, alias type name and full inst path into a queue, used when in finding
+	override
 
 
 #

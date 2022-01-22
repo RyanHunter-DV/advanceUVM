@@ -1,0 +1,2 @@
+`define UVM_KIT_VERSION 18.03-s001
+`define UVM_KIT_DATE 2018-03-26

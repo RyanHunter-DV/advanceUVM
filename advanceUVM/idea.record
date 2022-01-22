@@ -1,0 +1,5 @@
+kill() of a uvm_sequence, which can kill an executing sequence
+lock/unlock feature of seq/seqr
+grab/ungrab of seq/seqr
+is_blocked things of seq/seqr
+
