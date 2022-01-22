@@ -58,9 +58,10 @@ typedef class uvm_registry_object_creator;
 
 // @uvm-ieee 1800.2-2017 auto 8.2.3.1
 class uvm_component_registry #(type T=uvm_component, string Tname="<unknown>")
-                                           extends uvm_object_wrapper;
-  typedef uvm_component_registry #(T,Tname) this_type;
-  typedef uvm_registry_common#( this_type, uvm_registry_component_creator, T ) common_type;
+	extends uvm_object_wrapper; // {
+
+	typedef uvm_component_registry #(T,Tname) this_type;
+	typedef uvm_registry_common#( this_type, uvm_registry_component_creator, T ) common_type;
 
   // Function -- NODOCS -- create_component
   //
