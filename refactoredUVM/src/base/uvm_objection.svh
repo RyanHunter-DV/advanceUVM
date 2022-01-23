@@ -119,7 +119,7 @@ class uvm_objection extends uvm_report_object; // {
   // array to detect (and cancel) the drain.
 	local uvm_objection_context_object m_scheduled_contexts[uvm_object];
 	extern function uvm_objection_context_object getScheduledContext(uvm_object _o);
-	extern function void deleteScheduledContext(uvm_object _o);
+	extern function void deleteScheduledContext(uvm_object _o=null);
 
 	local uvm_objection_context_object m_forked_list[$];
 
@@ -152,7 +152,7 @@ class uvm_objection extends uvm_report_object; // {
     // Get the command line trace mode setting
     clp = uvm_cmdline_processor::get_inst();
     if(clp.get_arg_matches("+UVM_OBJECTION_TRACE", trace_args)) begin
-	  trace_mode(1);
+	  void'(trace_mode(1));
     end
     m_objections.push_back(this);
   endfunction
@@ -361,7 +361,7 @@ class uvm_objection extends uvm_report_object; // {
 	// Function- m_raise
 	extern function void m_raise (
 		uvm_object obj,
-		uvm_object source_obj,
+		uvm_object originObj,
 		string description="",
 		int count=1
 	);
@@ -627,7 +627,7 @@ class uvm_objection extends uvm_report_object; // {
 								objection.m_drain_proc[ctxt.obj] = process::self();
 							`else
 								begin
-									process_container_c procc = new(process::self());
+									process_container_c proc = new(process::self());
 									objection.m_drain_proc[ctxt.obj]=proc;
 								end
 							`endif
@@ -736,7 +736,7 @@ class uvm_objection extends uvm_report_object; // {
 	// Objection callback that is called when a <raise_objection> has reached ~obj~.
 	// The default implementation calls <uvm_component::raised>.
 	
-	virtual function void raiseHook(
+	virtual function void raiseHooks(
 		uvm_object obj,
 		uvm_object source_obj,
 		string description,
@@ -1025,7 +1025,16 @@ class uvm_objection extends uvm_report_object; // {
     m_prop_mode    = _rhs.m_prop_mode;
   endfunction
 
-endclass
+
+	extern function void setScheduledContext(
+		uvm_object _o,
+		uvm_objection_context_object _c
+	);
+
+	extern function void addToTotalCount(uvm_object o,int c);
+	extern function void addToOriginCount(uvm_object o,int c);
+
+endclass // }
 
 // TODO: change to plusarg
 //`define UVM_DEFAULT_TIMEOUT 9200s
@@ -1372,6 +1381,7 @@ class uvm_objection_callback extends uvm_callback;
       uvm_object source_obj, string description, int count);
   endtask
 
+
 endclass
 
 function bit uvm_objection::trace_mode (int mode=-1);
@@ -1380,7 +1390,7 @@ function bit uvm_objection::trace_mode (int mode=-1);
 	else if(mode == 1) m_trace_mode = 1;
 endfunction
 
-function void m_raise (
+function void uvm_objection::m_raise (
 	uvm_object obj,
 	uvm_object originObj,
 	string description="",
@@ -1399,9 +1409,9 @@ function void m_raise (
 		addToOriginCount(obj,count);
   
 	if (trace_mode())
-		m_report(obj,source_obj,description,count,"raised");
+		m_report(obj,originObj,description,count,"raised");
 
-	raiseHooks(obj, source_obj, description, count);
+	raiseHooks(obj, originObj, description, count);
 	triggerRaiseStatus(obj);
 
 	// Handle any outstanding drains...
@@ -1456,9 +1466,9 @@ function void m_raise (
 	if (ctxt == null) begin
 		// If there were no drains, just propagate as usual
 		if (!m_prop_mode && obj != m_top)
-			m_raise(m_top,source_obj,description,count);
+			m_raise(m_top,originObj,description,count);
 		else if (obj != m_top)
-			m_propagate(obj, source_obj, description, count, 1, 0);
+			m_propagate(obj, originObj, description, count, 1, 0);
 	end else begin
 		// Otherwise we need to determine what exactly happened
 		int diff_count;
@@ -1474,17 +1484,17 @@ function void m_raise (
 			if (diff_count > 0) begin
 				// we're looking at an increase in the total
 				if (!m_prop_mode && obj != m_top)
-					m_raise(m_top, source_obj, description, diff_count);
+					m_raise(m_top, originObj, description, diff_count);
 				else if (obj != m_top)
-					m_propagate(obj, source_obj, description, diff_count, 1, 0);
+					m_propagate(obj, originObj, description, diff_count, 1, 0);
 			end else begin
 				// we're looking at a decrease in the total
 				// The count field is always positive...
 				diff_count = -diff_count;
 				if (!m_prop_mode && obj != m_top)
-					m_drop(m_top, source_obj, description, diff_count);
+					m_drop(m_top, originObj, description, diff_count);
 				else if (obj != m_top)
-					m_propagate(obj, source_obj, description, diff_count, 0, 0);
+					m_propagate(obj, originObj, description, diff_count, 0, 0);
 			end
 		end
 

@@ -252,11 +252,12 @@ virtual class uvm_factory;
   // that which formed the loop. Using the previous example, if ~bar~
   // overrides ~xyz~, then ~bar~ is returned after the error is issued.
 
-  pure virtual function
-      uvm_component create_component_by_name (string requested_type_name,
-                                              string parent_inst_path="",
-                                              string name,
-                                              uvm_component parent);
+	pure virtual function uvm_component create_component_by_name (
+		string requested_type_name,
+		string parentPath="",
+		string name,
+		uvm_component parent
+	);
 
   // Group: Debug
 
@@ -406,11 +407,12 @@ class uvm_default_factory extends uvm_factory;
   // Creates and returns a component or object of the requested type, which may
   // be specified by type or by name.
 
-  extern virtual function
-      uvm_component create_component_by_name (string requested_type_name,
-                                              string parent_inst_path="",
-                                              string name,
-                                              uvm_component parent);
+	extern virtual function uvm_component create_component_by_name (
+		string requested_type_name,
+		string parentPath="",
+		string name,
+		uvm_component parent
+	);
 
   // Group: Debug
 
@@ -1249,23 +1251,27 @@ endfunction
 // create_component_by_name
 // ------------------------
 
-function uvm_component uvm_default_factory::create_component_by_name (string requested_type_name,
-                                                              string parent_inst_path="",
-                                                              string name,
-                                                              uvm_component parent);
-  uvm_object_wrapper wrapper;
-  string inst_path;
+function uvm_component uvm_default_factory::create_component_by_name (
+	string requested_type_name,
+	string parentPath="", // optional parent instance path
+	string name,
+	uvm_component parent
+); // {
 
-  if (parent_inst_path == "")
-    inst_path = name;
-  else if (name != "")
-    inst_path = {parent_inst_path,".",name};
-  else
-    inst_path = parent_inst_path;
+	uvm_object_wrapper wrapper;
+	string instPath;
 
-  m_override_info.delete();
+	// @RyanH, if no parentPath, then use name directly
+	if (parentPath== "")
+		instPath = name;
+	else if (name != "")
+		instPath = {parentPath,".",name};
+	else
+		instPath = parentPath;
 
-  wrapper = find_override_by_name(requested_type_name, inst_path);
+	m_override_info.delete();
+
+	wrapper = find_override_by_name(requested_type_name, instPath);
 
   // if no override exists, try to use requested_type_name directly
   if (wrapper == null) begin
@@ -1279,7 +1285,7 @@ function uvm_component uvm_default_factory::create_component_by_name (string req
 
   return wrapper.create_component(name, parent);
 
-endfunction
+endfunction // }
 
 
 // create_component_by_type
