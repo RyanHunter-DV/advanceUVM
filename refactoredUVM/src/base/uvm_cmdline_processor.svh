@@ -1,7 +1,7 @@
 //
 //------------------------------------------------------------------------------
 //   Copyright 2011 Mentor Graphics Corporation
-//   Copyright 2011 Cadence Design Systems, Inc. 
+//   Copyright 2011 Cadence Design Systems, Inc.
 //   Copyright 2011 Synopsys, Inc.
 //   Copyright 2013 NVIDIA Corporation
 //   All Rights Reserved Worldwide
@@ -33,17 +33,17 @@ endclass
 
 // Class: uvm_cmdline_processor
 //
-// This class provides an interface to the command line arguments that 
+// This class provides an interface to the command line arguments that
 // were provided for the given simulation.  The class is intended to be
 // used as a singleton, but that isn't required.  The generation of the
-// data structures which hold the command line argument information 
-// happens during construction of the class object.  A global variable 
-// called ~uvm_cmdline_proc~ is created at initialization time and may 
+// data structures which hold the command line argument information
+// happens during construction of the class object.  A global variable
+// called ~uvm_cmdline_proc~ is created at initialization time and may
 // be used to access command line information.
 //
 // The uvm_cmdline_processor class also provides support for setting various UVM
 // variables from the command line such as components' verbosities and configuration
-// settings for integral types and strings.  Each of these capabilities is described 
+// settings for integral types and strings.  Each of these capabilities is described
 // in the Built-in UVM Aware Command Line Arguments section.
 //
 
@@ -51,29 +51,29 @@ class uvm_cmdline_processor extends uvm_report_object;
 
   static local uvm_cmdline_processor m_inst;
 
-  // Group: Singleton 
+  // Group: Singleton
 
   // Function: get_inst
   //
   // Returns the singleton instance of the UVM command line processor.
 
   static function uvm_cmdline_processor get_inst();
-    if(m_inst == null) 
+    if(m_inst == null)
       m_inst = new("uvm_cmdline_proc");
     return m_inst;
   endfunction
 
-  protected string m_argv[$]; 
+  protected string m_argv[$];
   protected string m_plus_argv[$];
   protected string m_uvm_argv[$];
 
   // Group: Basic Arguments
-  
+
   // Function: get_args
   //
   // This function returns a queue with all of the command line
   // arguments that were used to start the simulation. Note that
-  // element 0 of the array will always be the name of the 
+  // element 0 of the array will always be the name of the
   // executable which started the simulation.
 
   function void get_args (output string args[$]);
@@ -111,7 +111,7 @@ class uvm_cmdline_processor extends uvm_report_object;
   // This function loads a queue with all of the arguments that
   // match the input expression and returns the number of items
   // that matched. If the input expression is bracketed
-  // with //, then it is taken as an extended regular expression 
+  // with //, then it is taken as an extended regular expression
   // otherwise, it is taken as the beginning of an argument to match.
   // For example:
   //
@@ -165,7 +165,7 @@ class uvm_cmdline_processor extends uvm_report_object;
   // system task, but does not take a formatting string. The return value is
   // the number of command line arguments that match the ~match~ string, and
   // ~value~ is the value of the first match.
-  
+
   function int get_arg_value (string match, ref string value);
     int chars = match.len();
     get_arg_value = 0;
@@ -203,18 +203,20 @@ class uvm_cmdline_processor extends uvm_report_object;
   // Splitting the resultant string is left to user but using the
   // uvm_split_string() function is recommended.
 
-  function int get_arg_values (string match, ref string values[$]);
-    int chars = match.len();
+	// get strings that matches the match, for example:
+	// match="+uvm_testname=", and input arg="+uvm_testname=hello", then value="hello"
+	function int get_arg_values (string match, ref string values[$]);
+		int chars = match.len();
 
-    values.delete();
-    foreach (m_argv[i]) begin
-      if(m_argv[i].len() >= chars) begin
-        if(m_argv[i].substr(0,chars-1) == match)
-          values.push_back(m_argv[i].substr(chars,m_argv[i].len()-1));
-      end
-    end
-    return values.size();
-  endfunction
+		values.delete(); // clear queue
+		foreach (m_argv[i]) begin
+			if(m_argv[i].len() >= chars) begin
+				if(m_argv[i].substr(0,chars-1) == match)
+					values.push_back(m_argv[i].substr(chars,m_argv[i].len()-1));
+			end
+		end
+		return values.size();
+	endfunction
 
   // Group: Tool information
 
@@ -250,15 +252,15 @@ class uvm_cmdline_processor extends uvm_report_object;
         m_argv.push_back(s);
         if(s[0] == "+") begin
           m_plus_argv.push_back(s);
-        end 
+        end
         if(s.len() >= 4 && (s[0]=="-" || s[0]=="+")) begin
           sub = s.substr(1,3);
           sub = sub.toupper();
           if(sub == "UVM")
             m_uvm_argv.push_back(s);
-        end 
+        end
       end
-    end while(s!=""); 
+    end while(s!="");
 
     // Group: Command Line Debug
 
@@ -286,7 +288,7 @@ class uvm_cmdline_processor extends uvm_report_object;
 
     // Variable: +UVM_VERBOSITY
     //
-    // ~+UVM_VERBOSITY=<verbosity>~ allows the user to specify the initial verbosity 
+    // ~+UVM_VERBOSITY=<verbosity>~ allows the user to specify the initial verbosity
     // for all components.  If multiple of these settings are provided, the first occurrence
     // is used and a warning is issued for subsequent settings.  For example:
     //
@@ -303,8 +305,8 @@ class uvm_cmdline_processor extends uvm_report_object;
     // verbosity of specific components at specific phases (and times during the "run" phases)
     // of the simulation.  The ~id~ argument can be either ~_ALL_~ for all IDs or a
     // specific message id.  Wildcarding is not supported for ~id~ due to performance concerns.
-    // Settings for non-"run" phases are executed in order of occurrence on the command line.  
-    // Settings for "run" phases (times) are sorted by time and then executed in order of 
+    // Settings for non-"run" phases are executed in order of occurrence on the command line.
+    // Settings for "run" phases (times) are sorted by time and then executed in order of
     // occurrence for settings of the same time.  For example:
     //
     //| <sim command> +uvm_set_verbosity=uvm_test_top.env0.agent1.*,_ALL_,UVM_FULL,time,800
@@ -313,7 +315,7 @@ class uvm_cmdline_processor extends uvm_report_object;
     // Variable: +uvm_set_action
     //
     // ~+uvm_set_action=<comp>,<id>,<severity>,<action>~ provides the equivalent of
-    // various uvm_report_object's set_report_*_action APIs.  The special keyword, 
+    // various uvm_report_object's set_report_*_action APIs.  The special keyword,
     // ~_ALL_~, can be provided for both/either the ~id~ and/or ~severity~ arguments.  The
     // action can be UVM_NO_ACTION or a | separated list of the other UVM message
     // actions.  For example:
@@ -375,7 +377,7 @@ class uvm_cmdline_processor extends uvm_report_object;
     // Users simply need to put the argument on the command line.
 
     // Variable: +uvm_set_inst_override
-     
+
     // Variable: +uvm_set_type_override
     //
     // ~+uvm_set_inst_override=<req_type>,<override_type>,<full_inst_path>~ and
@@ -392,13 +394,13 @@ class uvm_cmdline_processor extends uvm_report_object;
     // The implementation of this is in uvm_root.
 
     // Variable: +uvm_set_config_int
-      
+
     // Variable: +uvm_set_config_string
     //
     // ~+uvm_set_config_int=<comp>,<field>,<value>~ and
     // ~+uvm_set_config_string=<comp>,<field>,<value>~ work like their
     // procedural counterparts: set_config_int() and set_config_string(). For
-    // the value of int config settings, 'b (0b), 'o, 'd, 'h ('x or 0x) 
+    // the value of int config settings, 'b (0b), 'o, 'd, 'h ('x or 0x)
     // as the first two characters of the value are treated as base specifiers
     // for interpreting the base of the number. Size specifiers are not used
     // since SystemVerilog does not allow size specifiers in string to
@@ -419,8 +421,8 @@ class uvm_cmdline_processor extends uvm_report_object;
     // ~typename~ of that sequence.  For example:
     //
     //| <sim command> +uvm_set_default_sequence=path.to.sequencer,main_phase,seq_type
-    //  
-    // This is functionally equivalent to calling the following in your 
+    //
+    // This is functionally equivalent to calling the following in your
     // test:
     //
     //| uvm_coreservice_t cs = uvm_coreservice_t::get();
@@ -430,7 +432,7 @@ class uvm_cmdline_processor extends uvm_report_object;
     //|                                         "default_sequence",
     //|                                         f.find_wrapper_by_name("seq_type"));
     //
-     
+
 
     // The implementation of this is in uvm_root.
   endfunction
@@ -458,4 +460,3 @@ endclass
 const uvm_cmdline_processor uvm_cmdline_proc = uvm_cmdline_processor::get_inst();
 
 `endif //UVM_CMDLINE_PROC_PKG_SV
-
