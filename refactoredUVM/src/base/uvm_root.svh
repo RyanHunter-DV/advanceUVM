@@ -109,7 +109,7 @@ class uvm_root extends uvm_component;
   // just prior to phasing. The test may contain new verification components or
   // the entire testbench, in which case the test and testbench can be chosen from
   // the command line without forcing recompilation. If the global (package)
-  // variable, finish_on_completion, is set, then $finish is called after
+  // variable, finishOnCompletion, is set, then $finish is called after
   // phasing completes.
 
 	// it's a user API, so try not change its name and args
@@ -154,11 +154,12 @@ class uvm_root extends uvm_component;
   extern function void set_timeout(time timeout, bit overridable=1);
 
 
-  // Variable: finish_on_completion
+  // Variable: finishOnCompletion
   //
   // If set, then run_test will call $finish after all phases are executed.
 
-  bit  finish_on_completion = 1;
+  protected bool  _finishOnCompletion = true;
+  protected bool  _stopOnCompletion   = true;
 
 
   //----------------------------------------------------------------------------
@@ -298,10 +299,13 @@ class uvm_root extends uvm_component;
   extern static function int unsigned  get_num_top_levels();
   extern static function uvm_component get_top_level_by_id( int unsigned id);
   extern static function int           add_top_level (string top_name = "", bit is_topmost = 0);
+
+  /* // @RyanH, seems not used ##{{{
   extern function bit                  do_nonblocking_phase (int top_level_id, string phase_name);
   extern task                          do_blocking_phase (int top_level_id,
                                                           string phase_name,
                                                           output bit result);
+														  ##}}}*/
 
 
   extern function uvm_phase get_phase_by_name(string phase_name);
@@ -318,6 +322,11 @@ class uvm_root extends uvm_component;
 	 uvm_visitor#(uvm_component) v = cs.get_component_visitor();
 	 adapter.accept(this, v, p);
  endfunction
+
+
+	extern function bool finishOnCompletion();
+	extern function bool stopOnCompletion();
+
 
 endclass
 
@@ -418,7 +427,7 @@ endfunction
 // run_test
 // --------
 
-task uvm_root::run_test(string test_name="");
+task uvm_root::run_test(string test_name=""); // {
 
   uvm_report_server l_rs;
   uvm_coreservice_t cs = uvm_coreservice_t::get();
@@ -512,46 +521,48 @@ task uvm_root::run_test(string test_name="");
 		end
 	end
 
-  if (m_children.num() == 0) begin
-    uvm_report_fatal("NOCOMP",
-          {"No components instantiated. You must either instantiate",
-           " at least one component before calling run_test or use",
-           " run_test to do so. To run a test using run_test,",
-           " use +UVM_TESTNAME or supply the test name in",
-           " the argument to run_test(). Exiting simulation."}, UVM_NONE);
-    return;
-  end
+	// @RyanH, no cany sub-component
+	if (m_children.num() == 0) begin
+		uvm_report_fatal("NOCOMP",
+			{"No components instantiated. You must either instantiate",
+			" at least one component before calling run_test or use",
+			" run_test to do so. To run a test using run_test,",
+			" use +UVM_TESTNAME or supply the test name in",
+			" the argument to run_test(). Exiting simulation."}, UVM_NONE);
+		return;
+	end
 
-  begin
-  	if(test_name=="")
-  		uvm_report_info("RNTST", "Running test ...", UVM_LOW);
-  	else if (test_name == uvm_test_top.get_type_name())
-  		uvm_report_info("RNTST", {"Running test ",test_name,"..."}, UVM_LOW);
-  	else
-  		uvm_report_info("RNTST", {"Running test ",uvm_test_top.get_type_name()," (via factory override for test \"",test_name,"\")..."}, UVM_LOW);
-  end
+	// @RyanH, if no test_name from call of run_test and no +UVM_TESTNAME
+	// then test_name here is ""
+	if(test_name=="")
+		uvm_report_info("RNTST", "Running test ...", UVM_LOW);
+	else if (test_name == uvm_test_top.get_type_name())
+		uvm_report_info("RNTST", {"Running test ",test_name,"..."}, UVM_LOW);
+	else
+		uvm_report_info("RNTST", {"Running test ",uvm_test_top.get_type_name()," (via factory override for test \"",test_name,"\")..."}, UVM_LOW);
 
-  // phase runner, isolated from calling process
-  fork begin
-    // spawn the phase runner task
-    phase_runner_proc = process::self();
-    uvm_phase::m_run_phases();
-  end
-  join_none
-  #0; // let the phase runner start
+	// phase runner, isolated from calling process
+	fork
+		begin
+			// spawn the phase runner task
+			phase_runner_proc = process::self();
+			uvm_phase::m_run_phases();
+		end
+	join_none
+	#0; // let the phase runner start
 
-  wait (m_phase_all_done == 1);
+	wait (m_phase_all_done == 1);
 
-  // clean up after ourselves
-  phase_runner_proc.kill();
+	// clean up after ourselves, kill the process
+	phase_runner_proc.kill();
 
-  l_rs = uvm_report_server::get_server();
-  l_rs.report_summarize();
+	l_rs = uvm_report_server::get_server();
+	l_rs.report_summarize();
 
-  if (finish_on_completion)
-    $finish;
+	if (finishOnCompletion()) $finish;
+	if (stopOnCompletion()) $stop;
 
-endtask
+endtask // }
 
 
 // find_all
@@ -1148,6 +1159,7 @@ function uvm_phase uvm_root::get_phase_by_name(string phase_name);
   return ret_val;
 endfunction
 
+/* kind not used ##{{{
 function bit uvm_root::do_nonblocking_phase (int top_level_id,
                                              string phase_name);
   uvm_phase     phase;
@@ -1221,10 +1233,21 @@ task         uvm_root::do_blocking_phase (int top_level_id,
  	s.report_summarize();
     end
 
-    if (finish_on_completion)
+    if (finishOnCompletion())
       $finish;
-  end
+end
 endtask
+##}}}*/
+
+function bool uvm_root::finishOnCompletion(); // {
+	return _finishOnCompletion;
+endfunction // }
+
+function bool uvm_root::stopOnCompletion(); // {
+	return _stopOnCompletion;
+endfunction // }
+
+
 
 //--------------------
 // ML Additions (END)

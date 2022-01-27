@@ -1,5 +1,5 @@
 -incdir /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/tests/testInDevlop
 -incdir /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/src
 
-///home/ryan/prj/GitHub/advanceUVM/refactoredUVM/src/uvm.sv
+/home/ryan/prj/GitHub/advanceUVM/refactoredUVM/src/uvm.sv
 /home/ryan/prj/GitHub/advanceUVM/refactoredUVM/tests/testInDevlop/test.sv
