@@ -1,0 +1,6 @@
+rhload 'originalUVMSrc/node'
+
+context :uvm do
+	component :standard
+end
+
